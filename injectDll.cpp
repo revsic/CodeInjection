@@ -1,49 +1,73 @@
 #include <iostream>
-#include <string.h>
+#include <wchar.h>
 #include <Windows.h>
+#include <TlHelp32.h>
+
+#define TARGET L"test.exe"
+#define DLL_PATH L"C:\\Users\\revsi\\Documents\\Visual Studio 2015\\Projects\\GameHook\\Release\\GameHook.dll"
 
 typedef struct Param {
 	FARPROC loadLibrary;
-	char dllName[1024];
+	WCHAR dllName[1024];
 } PARAM;
 
-typedef HMODULE(__stdcall *PLOADLIBRARYA) (
-	LPCSTR lpLibFileName
-);
+typedef HMODULE(__stdcall *PLOADLIBRARYW) (
+	LPCWSTR lpLibFileName
+	);
 
 void InjectFunction(LPVOID lpParam) {
 	PARAM* param = (PARAM *)lpParam;
-	HMODULE hmd = ((PLOADLIBRARYA)param->loadLibrary)(param->dllName);
+	HMODULE hmd = ((PLOADLIBRARYW)param->loadLibrary)(param->dllName);
 }
+
+DWORD GetPidByProcessName(WCHAR *name);
 
 int main() {
 	SIZE_T written;
-	STARTUPINFO si;
-	PROCESS_INFORMATION pi;
 	int dataSize = -1;
 	unsigned char* data = (unsigned char *)InjectFunction;
-	while (data[++dataSize] != 0xc3); // opcode ret : 0xC3
+	while (data[++dataSize] != 0xc3);
 
-	memset(&si, 0, sizeof(si));
-	memset(&pi, 0, sizeof(pi));
-	si.cb = sizeof(si);
+	DWORD pid = GetPidByProcessName(TARGET);
+	std::cout << "[*] pid : " << pid << std::endl;
 
-	CreateProcess(L"C:\\WINDOWS\\System32\\notepad.exe", NULL, NULL, NULL, false, NULL, NULL, NULL, &si, &pi);
-	HANDLE hProcess = pi.hProcess;
+	HANDLE hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
 
 	PARAM param;
-	HMODULE hMod = LoadLibraryA("Kernel32.dll");
-	param.loadLibrary = GetProcAddress(hMod, "LoadLibraryA");
-	strcpy(param.dllName, "dllInject.dll");
+	HMODULE hMod = LoadLibraryW(L"Kernel32.dll");
+	param.loadLibrary = GetProcAddress(hMod, "LoadLibraryW");
+	wcscpy(param.dllName, DLL_PATH);
 
 	LPVOID vAddr = VirtualAllocEx(hProcess, NULL, dataSize, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
 	LPVOID argAddr = VirtualAllocEx(hProcess, NULL, sizeof(PARAM), MEM_COMMIT, PAGE_EXECUTE_READWRITE);
 
+	std::cout << "[*] vAddr " << std::hex << vAddr << std::endl;
+	std::cout << "[*] argAddr " << argAddr << std::endl;
+
 	WriteProcessMemory(hProcess, vAddr, data, dataSize + 1, &written);
 	WriteProcessMemory(hProcess, argAddr, (unsigned char *)&param, sizeof(param), &written);
 
+	system("pause");
 	CreateRemoteThread(hProcess, NULL, 0, (LPTHREAD_START_ROUTINE)vAddr, argAddr, 0, NULL);
-	std::cout << "[*] create Thread " << std::endl;
-
+	
 	return 0;
+}
+
+DWORD GetPidByProcessName(WCHAR *name) {
+	PROCESSENTRY32W entry;
+	memset(&entry, 0, sizeof(PROCESSENTRY32W));
+	entry.dwSize = sizeof(PROCESSENTRY32W);
+	
+	DWORD pid = -1;
+	HANDLE hSnapShot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, NULL);
+	if (Process32FirstW(hSnapShot, &entry)) {
+		do {
+			if (!wcscmp(name, entry.szExeFile)) {
+				pid = entry.th32ProcessID;
+				break;
+			}
+		} while (Process32Next(hSnapShot, &entry));
+	}
+
+	return pid;
 }
