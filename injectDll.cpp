@@ -69,5 +69,7 @@ DWORD GetPidByProcessName(WCHAR *name) {
 		} while (Process32Next(hSnapShot, &entry));
 	}
 
+	CloseHandle(hSnapShot);
+	
 	return pid;
 }
