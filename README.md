@@ -1,3 +1,4 @@
 #Code Injection source
 
-Injecting DLL using Code Injection technique
+1. injectDLL.cpp : injecting dll into remote process by CreateRemoteThread
+2. ScanInstructionAndInject.cpp : Scan such instructions and patch them
