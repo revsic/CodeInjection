@@ -4,7 +4,7 @@
 #include <TlHelp32.h>
 
 #define TARGET L"test.exe"
-#define DLL_PATH L"C:\\Users\\revsi\\Documents\\Visual Studio 2015\\Projects\\GameHook\\Release\\GameHook.dll"
+#define DLL_PATH L"Examples.dll"
 
 typedef struct Param {
 	FARPROC loadLibrary;
