@@ -29,6 +29,8 @@ WaitForSingleObject(hThread, INFINITE);
 
 Scan certain instructions and overwrite it.
 
+`ScanMemory` inspects the executable area in memory, finds data coming in as a pattern argument and stores the address in the list.
+
 ```cpp
 std::vector<LPVOID> list;
 BYTE pattern[] = { 0x48, 0x63, 0x4D, 0xC8, 0x89, 0x08, 0x49, 0x63, 0x47, 0x50 }; //target opcode
