@@ -2,26 +2,19 @@
 
 Inject code with certain technique written in cpp.
 
-- DLL Injection : [injectDll.cpp](https://github.com/revsic/Code-Injection/blob/master/injectDll.cpp)
+- DLL Injection : [InjectDll.cpp](https://github.com/revsic/Code-Injection/blob/master/InjectDll.cpp)
 - Memory Scanning : [MemoryScanInjector.cpp](https://github.com/revsic/Code-Injection/blob/master/MemoryScanInjector.cpp)
+- DLL Injection with User APC : [QueueUserAPC.cpp](https://github.com/revsic/Code-Injection/blob/master/QueueUserAPC.cpp)
 
 ## DLL Injection
 
 Inject dll with `CreateRemoteThread` and `LoadLibrary`.
 
 ```cpp
-// inject function
-int InjectFunction(PPARAM param) {
-	(param->lpLoadLibraryW)(param->lpLibFileName);
-	return 0;
-}
+VirtualAllocEx(pi.hProcess, NULL, dwLength, MEM_COMMIT, PAGE_READWRITE);
+WriteProcessMemory(pi.hProcess, lpLibName, DLL_NAME, dwLength, &written);
 
-// main
-PARAM param;
-wcscpy(param.lpLibFileName, lib);
-param.lpLoadLibraryW = (PLOADLIBRARYW)GetProcAddress(hKernel32, "LoadLibraryW");
-
-HANDLE hThread = CreateRemoteThread(pi.hProcess, NULL, NULL, (LPTHREAD_START_ROUTINE)lpFunction, lpParam, NULL, NULL);
+HANDLE hThread = CreateRemoteThread(pi.hProcess, NULL, NULL, pLoadLibraryW, lpLibName, NULL, NULL);
 WaitForSingleObject(hThread, INFINITE);
 ```
 
@@ -38,4 +31,20 @@ ScanMemory(hProcess, pattern, sizeof(pattern), list);
 
 BYTE code[] = { 0xC7, 0x00, 0x04, 0x00, 0x00, 0x00 }; // patch opcode
 WriteProcessMemory(hProcess, list.back(), code, sizeof(code), NULL);
+```
+
+## Queue User APC
+
+[QueueUserAPC](https://msdn.microsoft.com/ko-kr/library/windows/desktop/ms684954) adds user-mode Asynchronous Procedure Call (APC).
+
+Many anti-debugging agents watch CreateRemoteThread is called. In order to bypass this scenario, we can use APC to inject dll.
+
+```cpp
+for (auto dwTid : tids) {
+	HANDLE hThread = OpenThread(THREAD_SET_CONTEXT, FALSE, dwTid);
+	if (hThread) {
+		QueueUserAPC(pLoadLibrary, hThread, (ULONG_PTR)lpAddress);
+		CloseHandle(hThread);
+	}
+}
 ```
