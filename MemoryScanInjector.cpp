@@ -9,24 +9,24 @@
 
 #define PROC_NAME L"Examples.exe"
 
-DWORD GetPidByProcessName(WCHAR* name) {
+DWORD GetPidByProcessName(WCHAR* wName) {
 	PROCESSENTRY32W entry;
 	memset(&entry, 0, sizeof(entry));
-	entry.dwSize = sizeof(PROCESSENTRY32W);
+	entry.dwSize = sizeof(entry);
 
-	DWORD pid = -1;
+	DWORD dwPid = -1;
 	HANDLE hSnapShot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, NULL);
 	if (Process32FirstW(hSnapShot, &entry)) {
 		do {
-			if (!wcscmp(name, entry.szExeFile)) {
-				pid = entry.th32ProcessID;
+			if (!_wcsicmp(wName, entry.szExeFile)) {
+				dwPid = entry.th32ProcessID;
 				break;
 			}
 		} while (Process32NextW(hSnapShot, &entry));
 	}
 
 	CloseHandle(hSnapShot);
-	return pid;
+	return dwPid;
 }
 
 bool ScanMemory(HANDLE hProcess, BYTE *pattern, SIZE_T length, std::vector<LPVOID>& list) {
@@ -49,7 +49,7 @@ bool ScanMemory(HANDLE hProcess, BYTE *pattern, SIZE_T length, std::vector<LPVOI
 				BYTE *dump = new BYTE[mbi.RegionSize];
 				ReadProcessMemory(hProcess, lpStartAddress, dump, mbi.RegionSize, NULL);
 				std::string mem(dump, dump + mbi.RegionSize);
-				
+
 				size_t n = -1;
 				while (true) {
 					n = mem.find(strPattern, n + 1);
@@ -74,6 +74,8 @@ int main() {
 	DWORD pid = GetPidByProcessName(PROC_NAME);
 	HANDLE hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pid);
 
+	//sample
+
 	//movsxd rcx, dword ptr ss:[rbp-40]
 	//mov dword ptr ds:[rax], ecx
 	//movsxd rax, dword ptr ds:[r15+50]
@@ -83,14 +85,14 @@ int main() {
 	ScanMemory(hProcess, pattern, sizeof(pattern), list);
 
 	BYTE code[] = { 0xC7, 0x00, 0x04, 0x00, 0x00, 0x00 }; // patch opcode
-	
-	// target opcode is fourth memory point 
+
+	// target opcode is fourth memory point
 	if (list.size() == 4) {
 		DWORD oldProtect = 0;
 		VirtualProtectEx(hProcess, list.back(), sizeof(code), PAGE_EXECUTE_READWRITE, &oldProtect);
 		WriteProcessMemory(hProcess, list.back(), code, sizeof(code), NULL);
 		VirtualProtectEx(hProcess, list.back(), sizeof(code), oldProtect, NULL);
-	
+
 		printf("[*] success\n");
 	}
 	else {
