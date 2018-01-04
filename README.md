@@ -2,9 +2,9 @@
 
 Inject code with certain technique written in cpp.
 
-- DLL Injection : [InjectDll.cpp](https://github.com/revsic/Code-Injection/blob/master/InjectDll.cpp)
-- Memory Scanning : [MemoryScanInjector.cpp](https://github.com/revsic/Code-Injection/blob/master/MemoryScanInjector.cpp)
-- DLL Injection with User APC : [QueueUserAPC.cpp](https://github.com/revsic/Code-Injection/blob/master/QueueUserAPC.cpp)
+- DLL Injection : [InjectDll.cpp](./InjectDll.cpp)
+- Memory Scanning : [MemoryScanInjector.cpp](./MemoryScanInjector.cpp)
+- DLL Injection with User APC : [QueueUserAPC.cpp](./QueueUserAPC.cpp)
 
 ## DLL Injection
 
