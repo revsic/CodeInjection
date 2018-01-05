@@ -22,7 +22,7 @@ WaitForSingleObject(hThread, INFINITE);
 
 Scan certain instructions and overwrite it.
 
-`ScanMemory` inspects the executable area in memory, finds the pattern and stores the address in the list.
+`ScanMemory` inspects executable area, finds pattern and store the address to std::vector.
 
 ```cpp
 std::vector<LPVOID> list;
@@ -37,7 +37,7 @@ WriteProcessMemory(hProcess, list.back(), code, sizeof(code), NULL);
 
 [QueueUserAPC](https://msdn.microsoft.com/ko-kr/library/windows/desktop/ms684954) adds user-mode Asynchronous Procedure Call (APC).
 
-Many anti-debugging agents watch `CreateRemoteThread` is called. In order to bypass this scenario, we can use APC to inject dll.
+Many anti-debugging agents watch `CreateRemoteThread`. In order to bypass this scenario, we can use APC to inject dll.
 
 ```cpp
 for (auto dwTid : tids) {
